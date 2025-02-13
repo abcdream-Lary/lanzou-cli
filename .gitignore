@@ -1,0 +1,8 @@
+# 敏感信息
+config.py
+cookie.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
