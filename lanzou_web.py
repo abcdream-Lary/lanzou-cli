@@ -50,15 +50,23 @@ class LanZouWeb:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.39 (KHTML, like Gecko) Chrome/89.0.4389.111 Safari/537.39'
         })
-        self.base_url = 'https://pc.woozooo.com'
-        self.login_url = 'https://pc.woozooo.com/account.php'
-        self.mydisk_url = 'https://pc.woozooo.com/mydisk.php'
-        self.upload_url = 'https://pc.woozooo.com/fileup.php'
-        self.doupload_url = 'https://pc.woozooo.com/doupload.php'
+        self.base_url = 'https://up.woozooo.com'
+        self.login_url = 'https://up.woozooo.com/mlogin.php'
+        self.mydisk_url = 'https://up.woozooo.com/mydisk.php'
+        self.upload_url = 'https://up.woozooo.com/fileup.php'
+        self.doupload_url = 'https://up.woozooo.com/doupload.php'
         self.cookie_file = 'cookie.json'
         self.is_login = False
-        self.user_info = {}
+        self.user_info = {
+            'uid': LANZOU_CONFIG.get('uid', '')  # 从配置文件获取uid
+        }
         self.root_folder_id = "-1"  # 根目录ID
+        
+        # 检查必要的配置
+        if not self.user_info['uid']:
+            print(f"{RED}✗ 请在config.py中配置你的uid{RESET}")
+            print(f"{CYAN}uid可以从浏览器F12开发者工具中获取，位于网络请求的URL参数中{RESET}")
+            sys.exit(1)
         
         # 目录导航
         self.current_folder_id = self.root_folder_id  # 当前目录ID
@@ -136,6 +144,12 @@ class LanZouWeb:
     def _post(self, url: str, data: Dict = None, files: Dict = None, **kwargs) -> Dict:
         """发送POST请求并处理响应"""
         try:
+            # 在URL中添加uid参数
+            if '?' in url:
+                url = f"{url}&uid={self.user_info['uid']}"
+            else:
+                url = f"{url}?uid={self.user_info['uid']}"
+                
             response = self.session.post(url, data=data, files=files, **kwargs)
             if response.status_code != 200:
                 raise Exception(f"请求失败: HTTP {response.status_code}")
@@ -209,13 +223,24 @@ class LanZouWeb:
         try:
             files = []
             page = 1
+            
             while True:
+                # 完全按照浏览器F12看到的请求参数构造
                 result = self._post(
                     self.doupload_url,
                     data={
                         "task": "5",
                         "folder_id": folder_id,
-                        "pg": str(page)
+                        "pg": str(page),
+                        "uid": self.user_info['uid']  # 使用配置文件中的uid
+                    },
+                    headers={
+                        'Accept': 'application/json, text/javascript, */*; q=0.01',
+                        'Accept-Language': 'zh-CN,zh;q=0.9',
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'Origin': 'https://up.woozooo.com',
+                        'Referer': 'https://up.woozooo.com/mydisk.php',
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 )
                 
@@ -227,7 +252,12 @@ class LanZouWeb:
                 for item in text:
                     files.append(FileInfo(item))
                     
+                # 检查是否有更多页
+                if len(text) < 50:  # 通常每页50条记录
+                    break
+                    
                 page += 1
+                time.sleep(0.5)  # 添加延时，避免请求过快
                 
             return files
             
@@ -360,8 +390,6 @@ class LanZouWeb:
                     
             # 获取文件
             files = self.get_files(folder_id)
-            # 过滤掉系统文件
-            files = [f for f in files if f.name != "请忽使用第三方工具"]
             if files:
                 print("\n[文件]")
                 for file in files:
@@ -918,7 +946,7 @@ def main():
             if len(sys.argv) < 3:
                 print("✗ 请指定要删除的文件名")
                 return
-            file_name = sys.argv[2]
+            file_name = args[0]
             # 获取当前目录下的所有文件
             files = client.get_files(client.current_folder_id)
             # 查找目标文件
