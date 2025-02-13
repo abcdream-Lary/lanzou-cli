@@ -476,6 +476,7 @@ class LanZouWeb:
                 if result.get('zt') == 1:
                     print("✓ 登录成功!")
                     self.save_cookies()
+                    self.load_cookies()  # 立即加载新保存的cookie
                     self.is_login = True
                     time.sleep(1)  # 暂停1秒
                     os.system('cls' if os.name == 'nt' else 'clear')  # 清屏
@@ -487,6 +488,7 @@ class LanZouWeb:
                 if self.check_login():
                     print("✓ 登录成功!")
                     self.save_cookies()
+                    self.load_cookies()  # 立即加载新保存的cookie
                     time.sleep(1)  # 暂停1秒
                     os.system('cls' if os.name == 'nt' else 'clear')  # 清屏
                     return True
