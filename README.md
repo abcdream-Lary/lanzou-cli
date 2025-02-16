@@ -29,7 +29,7 @@
 
     ```bash
     cp config.example.py config.py
-    # 编辑 config.py，填入你的蓝奏云账号和密码
+    # 编辑 config.py，填入你的蓝奏云账号、密码和 蓝奏云UID（可从浏览器开发者工具中获取）
     ```
 
 4. 运行程序：
